@@ -76,16 +76,23 @@ function shardsFor(result) {
   return Math.round((base + win) * asc);
 }
 
-// Ascent modifiers, read by run.js when it sets a run up. Each level turns a
-// different screw — tougher bricks, tougher elites, less health to start, a
-// faster ball — so climbing them feels like a different game rather than the
-// same one with bigger numbers.
+// Ascent modifiers, read by run.js when it sets a run up.
+//
+// Note what is NOT here: ball speed. It reads like an obvious difficulty knob
+// and it is worse than useless — a faster ball ends a room sooner, so it cuts
+// the player's total exposure more than it raises the risk of any one return.
+// With a paddle quick enough to keep up, the bots had Ascent III coming out
+// EASIER than the base climb, entirely because of the speed multiplier.
+//
+// What actually makes a run harder is time under fire and the cost of a
+// mistake: tougher bricks (longer rooms), tougher elites, and less health to
+// absorb the drops along the way.
 function ascentMods(level) {
   return {
-    hpMul: 1 + level * 0.10,
-    eliteMul: 1 + level * 0.09,
-    startHpMul: level >= 3 ? 0.76 : level >= 2 ? 0.88 : 1,
-    speedMul: 1 + level * 0.035,
+    hpMul: 1 + level * 0.16,
+    eliteMul: 1 + level * 0.13,
+    startHpMul: level >= 3 ? 0.68 : level >= 2 ? 0.82 : level >= 1 ? 0.92 : 1,
+    hurtMul: 1 + level * 0.18,          // a dropped ball costs more up here
     shardMul: 1 + level * 0.25 + (level >= 3 ? 0.05 : 0),
   };
 }

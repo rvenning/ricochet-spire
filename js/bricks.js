@@ -116,7 +116,9 @@ const BRICKS = {
     colors: ["#5b3fa8", "#c0a6ff"], glyph: "▲",
     tick(g, b, dt) {
       b.grow = (b.grow || 0) + dt;
-      if (b.grow >= 10 && b.maxHp < 8) { b.grow = 0; b.maxHp++; b.hp++; }
+      // Capped low: an unbounded creeper turns a slow room into an unclearable
+      // one rather than a tense one.
+      if (b.grow >= 10 && b.maxHp < 5) { b.grow = 0; b.maxHp++; b.hp++; }
     },
   },
 };

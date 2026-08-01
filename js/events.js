@@ -150,8 +150,8 @@ for (const e of EVENTS) EVENT_BY_ID[e.id] = e;
 // A shop always stocks four cards and two services. Prices scale with the act
 // so gold keeps meaning something on floor 30.
 const SHOP_SERVICES = [
-  { id: "heal", name: "A hot meal", icon: "🍲", desc: "Restore 30 health.",
-    cost: 55, out: { heal: 30 } },
+  { id: "heal", name: "A hot meal", icon: "🍲", desc: "Restore 22 health.",
+    cost: 55, out: { heal: 22 } },
   { id: "hpMax", name: "Reinforced frame", icon: "🦾", desc: "+20 maximum health, and heal it.",
     cost: 105, out: { hpMax: 20, heal: 20 } },
   { id: "shard", name: "Buy a shard", icon: "💠", desc: "Trade gold for one Archive shard.",

@@ -33,8 +33,34 @@ const BRICK_TOP = 96;           // y of the first brick row
 const PADDLE_Y = LH - 44;       // top edge of the paddle
 const PADDLE_H = 12;
 const BALL_R = 6;
-const BASE_PADDLE_W = 90;
-const BASE_PADDLE_SPEED = 1000; // px/s — a REAL cap, and the reason a bot can miss
+// Paddle width as a FRACTION OF THE FIELD is the difficulty dial of the whole
+// genre, and the one to reach for before touching health or brick counts —
+// it makes a mistake more likely without making a room any longer.
+// 80/420 is ~19%; arcade Arkanoid sits near 13%. The first pass was 90 (21%)
+// and the ordinary bot dropped 0.29 balls per room in act 1 and ZERO across
+// the whole of act 2, which is not a skill test at all.
+const BASE_PADDLE_W = 80;
+
+// Paddle feel. Two numbers, and they do different jobs:
+//
+//   PADDLE_EASE is how it FEELS. The paddle closes a fraction of the remaining
+//   distance every frame, so a 5px correction is instant and a cross-field
+//   sweep starts fast and settles instead of stopping dead. Brick Breaker DX
+//   uses exactly this with a rate of 16 and it is the cleanest paddle in the
+//   family; a constant-velocity chase (what this file had first) moves a 5px
+//   correction at the same speed as a 300px one, which reads as sluggish up
+//   close and laggy far away.
+//
+//   BASE_PADDLE_SPEED is the BALANCE. Brick Breaker DX has no cap at all, which
+//   is fine there because its bot only measures clear times. Here a dropped ball
+//   costs run health, so an uncapped paddle would make the ordinary bot stop
+//   missing and the whole difficulty curve would go with it. 2000px/s crosses
+//   the 420px field in ~0.2s, which is about as fast as a thumb actually moves
+//   — so it never feels like a limit in normal play, and still punishes being
+//   caught on the wrong side of the arena.
+const PADDLE_EASE = 16;
+const BASE_PADDLE_SPEED = 2000;
+const KEY_PADDLE_SPEED = 760;   // keys are coarse; matching the pointer is unplayable
 const STEP = 1 / 60;
 const MAX_STEPS = 8;            // a backgrounded tab must not simulate a minute
 const MAX_SUBSTEP = 5;          // logical px of ball travel per collision pass
@@ -104,6 +130,8 @@ const Game = {
       w: BASE_PADDLE_W, y: PADDLE_Y,
     };
     this.paddle.w = this.paddleWidth();
+    // Drawn once, up front, like every other roll in this file.
+    this.serveLean = this.rng.range(0.16, 0.34) * (this.rng() < 0.5 ? -1 : 1);
 
     this.buildBricks(a, cfg.hpMul || 1);
     this.buildHazards(a);
@@ -242,7 +270,10 @@ const Game = {
 
   paddleSpeed() {
     let s = BASE_PADDLE_SPEED + this.build.stats.paddleSpeed;
-    if (this.f("mini")) s += 90;             // a small paddle has to be quick
+    // A small paddle gets some compensation, but not enough to cancel the
+    // downside — at +260 the Mini Paddle deck stopped costing anything at all
+    // and the risk card became strictly good.
+    if (this.f("mini")) s += 140;
     return s;
   },
 
@@ -382,14 +413,18 @@ const Game = {
       // Ice: the paddle accelerates toward the target and coasts. Overshooting
       // is the point.
       const dir = Math.sign(target - p.x);
-      p.vx += dir * 1500 * dt;
+      p.vx += dir * 2600 * dt;
       p.vx = Math.max(-maxV, Math.min(maxV, p.vx));
       p.vx *= Math.pow(0.55, dt);
       p.x += p.vx * dt;
     } else {
+      // Ease toward the target, then clamp to the speed limit. The ease gives
+      // the feel; the clamp keeps the limit real.
       const dx = target - p.x;
-      const step = maxV * dt;
-      const move = Math.abs(dx) <= step ? dx : Math.sign(dx) * step;
+      let move = dx * Math.min(1, dt * PADDLE_EASE);
+      const cap = maxV * dt;
+      if (move > cap) move = cap;
+      else if (move < -cap) move = -cap;
       p.x += move;
       p.vx = move / dt;
     }
@@ -522,7 +557,13 @@ const Game = {
   launchBall(b) {
     b.stuck = false;
     const off = this.paddle.w > 0 ? (b.x - this.paddle.x) / (this.paddle.w / 2) : 0;
-    const v = Physics.paddleBounce(off * 0.55, this.ballSpeed(b));
+    // A serve from dead centre leaves at exactly 0 degrees, and a paddle parked
+    // at the middle then returns it along the identical path forever — an
+    // abandoned game can clear a room by itself. The lean is drawn from the
+    // arena's own seed, so it is still perfectly reproducible; it just isn't
+    // symmetric.
+    const lean = off * 0.55 + (this.serveLean || 0);
+    const v = Physics.paddleBounce(lean, this.ballSpeed(b));
     b.vx = v.vx; b.vy = v.vy;
     this.emit("launch", { x: b.x, y: b.y });
   },
@@ -829,8 +870,10 @@ const Game = {
     let d = dmg;
     if (brick.type.armour) {
       // Armour is what stops "take the biggest number" being a strategy: raw
-      // damage is cut to a third, and only Piercing and Heavy add on top of it.
-      d = Math.max(1, Math.ceil(d / 3)) + this.build.stats.pierce + (this.f("heavy") ? 2 : 0);
+      // damage is quartered, and only Piercing and Heavy add on top of it.
+      // At a third, a fast high-damage ball out-DPS'd a piercing one on the
+      // Anvil and armour stopped meaning anything.
+      d = Math.max(1, Math.ceil(d / 4)) + this.build.stats.pierce * 2 + (this.f("heavy") ? 3 : 0);
     }
 
     brick.hp -= d;
@@ -966,11 +1009,13 @@ const Game = {
     this.paddle.target = this.mirrorOn ? LW - x : x;
   },
 
-  // Keyboard/held input: -1, 0 or 1.
+  // Keyboard/held input: -1, 0 or 1. This walks the TARGET rather than the
+  // paddle, so the same ease applies and a held key feels like a smooth sweep.
   nudge(dir, dt) {
     if (!dir) return;
     const d = this.mirrorOn ? -dir : dir;
-    this.paddle.target = Math.max(0, Math.min(LW, this.paddle.target + d * this.paddleSpeed() * dt));
+    const rate = KEY_PADDLE_SPEED + this.build.stats.paddleSpeed * 0.4;
+    this.paddle.target = Math.max(0, Math.min(LW, this.paddle.target + d * rate * dt));
   },
 };
 

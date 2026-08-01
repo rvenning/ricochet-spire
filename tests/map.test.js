@@ -312,7 +312,7 @@ test("battleConfig scales with the act and the room's tier", () => {
   const c1 = Run.battleConfig();
   assert.ok(c1.arena && c1.build && c1.hpMul > 0);
   assert.equal(c1.boss, null);
-  assert.equal(c1.hpPerBall, 6, "a dropped ball is cheapest in act 1");
+  assert.equal(c1.hpPerBall, 9, "a dropped ball is cheapest in act 1");
 
   // Force the boss node of act 3 and compare.
   Run.state.act = 3;

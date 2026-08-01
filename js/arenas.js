@@ -230,12 +230,15 @@ const ARENAS = [
 
   { id: "nursery", name: "The Nursery", act: 2, tier: "elite", speed: 502,
     twist: "Creepers thicken while you dither. Be quick.",
+    // Growing bricks feed back on themselves — a slow clear makes the room
+    // tougher, which makes the clear slower. The first version packed in
+    // nineteen Creepers across five rows and spiralled to 98s. Fewer of them,
+    // and the loop stays a threat rather than a trap.
     rows: [
-      "TT3333333TT.",
-      ".T3.TTT.3T..",
-      "..33TTT33...",
-      ".T3.TTT.3T..",
-      "TT3333333TT.",
+      "T3333333T3..",
+      ".3.TTTT.3...",
+      "..3TTTT3....",
+      "T3333333T3..",
     ], hazards: [] },
 
   { id: "static", name: "Static Field", act: 2, tier: "elite", speed: 505,

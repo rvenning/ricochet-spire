@@ -295,13 +295,14 @@ const Run = {
       tier: kind,
       hp: s.hp, hpMax: s.hpMax,
       hpMul,
-      speedMul: (1 + (s.act - 1) * 0.06 + (isElite ? 0.04 : 0)) * (mods.speedMul || 1),
+      speedMul: 1 + (s.act - 1) * 0.06 + (isElite ? 0.04 : 0),
       scoreMul: 1 + (s.act - 1) * 0.55 + (isElite ? 0.4 : 0) + (isBoss ? 0.8 : 0),
       // What a dropped ball costs. It rises through the climb rather than
       // being flat: a bot dying on the very first room of a run turned out to
       // be a flat 8 against a starting 62, which is eight mistakes for the
-      // whole of act 1.
-      hpPerBall: (isBoss ? 5 : isElite ? 3 : 0) + 4 + s.act * 2,
+      // whole of act 1. This is the main dial for overall difficulty — it is
+      // the only one that makes a mistake matter without making a room longer.
+      hpPerBall: Math.round(((isBoss ? 6 : isElite ? 4 : 0) + 6 + s.act * 2.5) * (mods.hurtMul || 1)),
       timeLimit: isBoss ? 240 : isElite ? 190 : 155,
       goldBase: Math.round((26 + node.floor * 2.4 + s.act * 9) * (isElite ? 2 : 1) * (isBoss ? 3 : 1)),
     };
@@ -488,7 +489,10 @@ const Run = {
     if (!s.pending || s.pending.kind !== "rest") return null;
     if (id === "sleep") {
       const before = s.hp;
-      s.hp = Math.min(s.hpMax, s.hp + Math.round(s.hpMax * 0.34));
+      // Healing supply, not the cost of a mistake, is what decides how long a
+      // climb lasts: raising hpPerBall barely moved the win rate because the
+      // bot simply healed more. This is the dial that actually bites.
+      s.hp = Math.min(s.hpMax, s.hp + Math.round(s.hpMax * 0.26));
       s.pending = null;
       this.afterNode();
       return { healed: s.hp - before };

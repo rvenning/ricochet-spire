@@ -141,8 +141,11 @@ const CARDS = [
     stats: { scorePct: 65, goldPct: 55 }, flags: ["mini"], tags: ["risk"], synergy: ["magnetic", "barrier"] },
 
   { id: "swift", name: "Swift Rails", type: "paddle", rarity: "common", icon: "💨", max: 2,
-    desc: "The paddle moves a good deal faster.",
-    stats: { paddleSpeed: 170 }, tags: ["control"], synergy: ["mini"] },
+    desc: "Recover from the wrong side of the arena a good deal faster.",
+    // The paddle eases toward the pointer and only hits its speed limit on a
+    // long recovery, so this has to be a big number to be felt at all. At +170
+    // against a 2000 cap it was a card that did nothing.
+    stats: { paddleSpeed: 420 }, tags: ["control"], synergy: ["mini"] },
 
   { id: "laser", name: "Laser Paddle", type: "paddle", rarity: "uncommon", icon: "🔫",
     desc: "The paddle fires upward on its own.",
@@ -208,11 +211,11 @@ const CARDS = [
   /* ------------------------------------------------------- utility cards */
   { id: "vitality", name: "Vitality", type: "utility", rarity: "common", icon: "❤️", max: 2,
     desc: "+18 maximum health, and heal a little after every arena.",
-    stats: { hpMax: 18, heal: 5 }, tags: ["defence"] },
+    stats: { hpMax: 18, heal: 3 }, tags: ["defence"] },
 
   { id: "mend", name: "Mend", type: "utility", rarity: "common", icon: "🩹", max: 2,
-    desc: "Heal 9 health every time you clear an arena.",
-    stats: { heal: 9 }, tags: ["defence"] },
+    desc: "Heal 6 health every time you clear an arena.",
+    stats: { heal: 6 }, tags: ["defence"] },
 
   { id: "vampire", name: "Siphon", type: "utility", rarity: "uncommon", icon: "🦇",
     desc: "Every 25 bricks you break returns 1 health.",
@@ -257,8 +260,8 @@ const CARDS = [
     synergy: ["fireball", "ricochet"] },
 
   { id: "eternity", name: "Eternity", type: "utility", rarity: "legendary", icon: "♾️",
-    desc: "Three free drops every arena, and 15 health back on every clear.",
-    stats: { shield: 3, heal: 15 }, tags: ["defence"] },
+    desc: "Three free drops every arena, and 10 health back on every clear.",
+    stats: { shield: 3, heal: 10 }, tags: ["defence"] },
 ];
 
 // ------------------------------------------------------------------ indexing

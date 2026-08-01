@@ -177,7 +177,10 @@ test("ascents raise the ceiling in every direction they claim to", () => {
   assert.equal(a0.startHpMul, 1);
   assert.ok(a3.hpMul > a0.hpMul);
   assert.ok(a3.startHpMul < 1);
-  assert.ok(a3.speedMul > a0.speedMul);
+  assert.ok(a3.hurtMul > a0.hurtMul, "a mistake must cost more up there");
   assert.ok(a3.eliteMul > a0.eliteMul);
   assert.ok(a3.shardMul > a0.shardMul);
+  // Deliberately NOT ball speed: a faster ball ends a room sooner and cuts the
+  // player's total exposure, so it made Ascent III come out easier than base.
+  assert.equal(a3.speedMul, undefined, "ascents must not lean on ball speed");
 });
