@@ -66,7 +66,10 @@ const ARENAS = [
       "..11222211..",
       "..11222211..",
       "...111111...",
-    ], hazards: [{ kind: "conveyor", y: 300, h: 46, vx: -132 }] },
+      // A one-way belt biases the ball toward that wall on every single trip,
+      // so it compounds in a way the two-way belts in Cross-Belt do not. Gentle
+      // enough to steer against.
+    ], hazards: [{ kind: "conveyor", y: 300, h: 46, vx: -98 }] },
 
   { id: "gatehouse", name: "Gatehouse", act: 1, tier: "standard", speed: 456,
     twist: "Two gates in the wall. In one side, out the other.",

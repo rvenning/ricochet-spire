@@ -45,21 +45,50 @@ const Render = {
     document.addEventListener("gesturestart", (e) => e.preventDefault());
     document.addEventListener("gesturechange", (e) => e.preventDefault());
 
-    const aim = (e) => {
+    // Input. Read the comments before simplifying any of this — every branch
+    // is here because a device needed it.
+    const aimAtClientX = (cx) => {
       if (!Game.running) return;
       const r = this.cv.getBoundingClientRect();
-      const x = (e.clientX - r.left - this.ox) / this.scale;
+      const x = (cx - r.left - this.ox) / this.scale;
       this.pointerX = x;
       Game.aimAt(x);
     };
+
     this.cv.addEventListener("pointerdown", (e) => {
       e.preventDefault();
-      aim(e);
+      GK.Sfx.init();
+      // Capture, so a swipe that strays over the HUD buttons floating on top
+      // of the stage keeps steering the paddle instead of being stolen.
+      if (this.cv.setPointerCapture) {
+        try { this.cv.setPointerCapture(e.pointerId); } catch (_) {}
+      }
+      aimAtClientX(e.clientX);
       Game.launch();
-    });
+    }, { passive: false });
+
     this.cv.addEventListener("pointermove", (e) => {
-      if (e.pressure > 0 || e.pointerType === "mouse") aim(e);
-    });
+      // NOT `e.pressure > 0`: iOS Safari reports a pressure of 0 for ordinary
+      // touch, so that test silently drops every swipe on an iPad and the
+      // paddle only moves when you tap. Ask what kind of pointer it is.
+      if (e.pointerType === "touch" || e.buttons || e.pointerType === "mouse") {
+        e.preventDefault();
+        aimAtClientX(e.clientX);
+      }
+    }, { passive: false });
+
+    // Belt and braces for touch: some iOS builds are stingy with pointermove
+    // during a fast flick, and touchmove always arrives. Both paths end in the
+    // same call, so a duplicate is harmless.
+    this.cv.addEventListener("touchmove", (e) => {
+      e.preventDefault();
+      if (e.touches.length) aimAtClientX(e.touches[0].clientX);
+    }, { passive: false });
+
+    this.cv.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      if (e.touches.length) aimAtClientX(e.touches[0].clientX);
+    }, { passive: false });
 
     window.addEventListener("keydown", (e) => {
       if (e.key === "ArrowLeft") this.keys.left = true;

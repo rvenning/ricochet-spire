@@ -51,15 +51,17 @@ const BASE_PADDLE_W = 80;
 //   correction at the same speed as a 300px one, which reads as sluggish up
 //   close and laggy far away.
 //
-//   BASE_PADDLE_SPEED is the BALANCE. Brick Breaker DX has no cap at all, which
-//   is fine there because its bot only measures clear times. Here a dropped ball
-//   costs run health, so an uncapped paddle would make the ordinary bot stop
-//   missing and the whole difficulty curve would go with it. 2000px/s crosses
-//   the 420px field in ~0.2s, which is about as fast as a thumb actually moves
-//   — so it never feels like a limit in normal play, and still punishes being
-//   caught on the wrong side of the arena.
+//   BASE_PADDLE_SPEED is a SANITY LIMIT, and nothing more. It was originally
+//   set at 2000 to keep the balance bots fallible — and that was the wrong job
+//   to give it. A finger crossing the field on an iPad moves far quicker than
+//   2000px/s, so the paddle visibly trailed the swipe and the whole control
+//   felt heavy next to Brick Breaker DX, which caps nothing at all.
+//
+//   Difficulty comes from the paddle's WIDTH (see below) and from the fact that
+//   a player aims imperfectly — both of which are honest. It must not come from
+//   the paddle refusing to go where it was sent.
 const PADDLE_EASE = 16;
-const BASE_PADDLE_SPEED = 2000;
+const BASE_PADDLE_SPEED = 4200;
 const KEY_PADDLE_SPEED = 760;   // keys are coarse; matching the pointer is unplayable
 const STEP = 1 / 60;
 const MAX_STEPS = 8;            // a backgrounded tab must not simulate a minute
