@@ -1,0 +1,426 @@
+/* Ricochet Spire — neon-dark theme over gamekit.
+   ---------------------------------------------------------------------------
+   Three gamekit traps are handled deliberately below, and each one shipped as
+   a real bug in another family game before it got written down:
+
+   1. `.screen` is redeclared for align-items. gk-base centres every screen's
+      children, which silently collapses the arena stage to zero width — its
+      only child is an absolutely-positioned canvas, so its content width is 0.
+
+   2. NO `#screen-*` RULE SETS `display`. gk-base shows and hides screens with
+      `.screen{display:none}` / `.screen.active{display:flex}`, and an ID
+      selector outranks both — a single `display:flex` there would pin that
+      screen on top of everything forever and eat every tap underneath it.
+
+   3. `.btn` is redeclared IN FULL (colour, background, box-shadow, margin).
+      Overriding only the background leaves gk-base's white label and gold drop
+      shadow behind, which reads fine in a light theme and ships an unreadable
+      button in a dark one.
+
+   Contrast: every fill in this palette is dark, so labels are the light ink;
+   the neon accents are bright, so their labels are the near-black void. Both
+   directions measure well past 4.5:1 — the pairing is never mixed. */
+
+:root {
+  --void: #07060f;
+  --deep: #0e0b1e;
+  --panel: #171334;
+  --panel-2: #221b47;
+  --line: #33296b;
+  --ink: #ecebff;
+  --dim: #a29ccf;
+
+  --neon: #35e0d0;
+  --neon-dk: #12897f;
+  --mag: #ff3d92;
+  --mag-dk: #a3175a;
+  --vio: #a06bff;
+  --vio-dk: #5c2fa8;
+  --gold: #ffd24a;
+  --danger: #ff5470;
+
+  --r-common: #7c86b8;
+  --r-uncommon: #35e0d0;
+  --r-rare: #a06bff;
+  --r-legendary: #ffd24a;
+
+  /* gamekit's own knobs */
+  --gk-accent: #35e0d0;
+  --gk-accent-sh: #12897f;
+  --gk-ink: #ecebff;
+  --gk-card: #171334;
+  --gk-input-border: #33296b;
+  --gk-key-bg: #221b47;
+  --gk-key-sh: #100c26;
+  --gk-radius: 14px;
+}
+
+/* Paint the ROOT, not just body: with viewport-fit=cover iOS extends the
+   visual viewport past height:100% in standalone mode, and a background set
+   only on body stops short of the bottom inset — the gap falls through to the
+   page canvas and paints WHITE. */
+html { background: var(--void); }
+
+body {
+  margin: 0;
+  /* Every screen is position:fixed, so body has almost no content height and
+     the root's colour would show through beneath it — a two-tone splash on
+     every launch. Stretch body over the viewport so its colour wins. */
+  min-height: 100vh;
+  background: var(--deep);
+  color: var(--ink);
+  font-family: "Chakra Petch", system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  overscroll-behavior: none;
+}
+
+* { box-sizing: border-box; }
+
+/* See note 1. Never `display`. */
+.screen { align-items: stretch; justify-content: flex-start; background: var(--deep); }
+#screen-lobby, #screen-setup, #screen-map, #screen-archive, #screen-leaderboard,
+#screen-profiles, #screen-shop, #screen-reward, #screen-event, #screen-rest,
+#screen-treasure, #screen-results {
+  overflow-y: auto;
+  padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+}
+#screen-game { padding: 0; overflow: hidden; touch-action: none; }
+
+/* ---------------------------------------------------------------- buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border: none; border-radius: 12px; padding: 14px 20px;
+  font-family: inherit; font-size: 17px; font-weight: 700; letter-spacing: .02em;
+  cursor: pointer;
+  color: var(--void);
+  background: var(--neon);
+  box-shadow: 0 4px 0 var(--neon-dk);
+  margin: 7px 0;
+}
+.btn:active { transform: translateY(3px); box-shadow: none; }
+.btn.big { font-size: 19px; padding: 17px 24px; }
+.btn.wide { width: 100%; }
+.btn.blue, .btn.green { color: var(--void); background: var(--vio); box-shadow: 0 4px 0 var(--vio-dk); }
+.btn.green { background: var(--neon); box-shadow: 0 4px 0 var(--neon-dk); }
+.btn.danger { color: var(--void); background: var(--danger); box-shadow: 0 4px 0 #8f1f34; }
+.btn.grey, .btn.ghost {
+  color: var(--dim); background: var(--panel-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.btn.grey:active, .btn.ghost:active { box-shadow: inset 0 0 0 1px var(--line); }
+.btn:disabled { filter: grayscale(.6) brightness(.75); cursor: not-allowed; }
+
+.icon-btn {
+  background: var(--panel-2); border: 1px solid var(--line); color: var(--ink);
+  border-radius: 12px; width: 44px; height: 44px; font-size: 20px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+}
+.icon-btn.small { width: 34px; height: 34px; font-size: 16px; border-radius: 9px; }
+.icon-btn:active { transform: translateY(2px); }
+
+/* ------------------------------------------------------------------- bars */
+/* Sticky, because the screens it sits on scroll. The map in particular opens
+   scrolled near the bottom of a 900px act, and a bar that scrolled with it
+   would put the menu and the deck button a full screen out of reach. */
+.bar {
+  width: 100%; max-width: 620px; margin: 0 auto; flex: none;
+  display: flex; align-items: center; gap: 10px;
+  padding: calc(12px + env(safe-area-inset-top, 0px)) 14px 8px;
+  position: sticky; top: 0; z-index: 6;
+  background: var(--deep);
+}
+.bar h2 { flex: 1; margin: 0; font-size: 19px; font-weight: 700; text-align: center; }
+.who { flex: 1; text-align: center; font-weight: 700; font-size: 17px; }
+.screen-hint { max-width: 620px; margin: 0 auto; padding: 0 16px 6px; color: var(--dim); font-size: 14px; }
+
+.hud {
+  font-weight: 700; font-size: 15px; white-space: nowrap;
+  padding: 5px 10px; border-radius: 9px; background: var(--panel-2);
+  border: 1px solid var(--line);
+}
+.hud.hp { color: var(--danger); }
+.hud.gold, .hud.shards { color: var(--gold); }
+.hud.score { color: var(--neon); }
+
+/* ----------------------------------------------------------------- splash */
+.spire-mark { font-size: 62px; line-height: 1; filter: drop-shadow(0 0 22px var(--neon)); }
+.logo {
+  margin: 6px 0 2px; font-family: "Chakra Petch", sans-serif;
+  font-size: 40px; font-weight: 700; letter-spacing: .10em; line-height: 1;
+  color: var(--neon); text-shadow: 0 0 26px rgba(53, 224, 208, .55);
+}
+.logo span { display: block; color: var(--mag); text-shadow: 0 0 26px rgba(255, 61, 146, .5); }
+.tagline { color: var(--dim); margin: 8px 0 20px; letter-spacing: .16em; font-size: 14px; text-transform: uppercase; }
+.splash-inner { padding: 24px 20px; max-width: 420px; }
+.splash-inner .btn { width: 100%; }
+.splash-foot {
+  display: flex; align-items: center; gap: 10px; margin-top: 18px;
+  color: var(--dim); font-size: 13px;
+}
+.splash-foot span { flex: 1; text-align: left; }
+
+/* ------------------------------------------------------------------ lobby */
+.lobby-inner, .setup-inner, .shop-inner, .pick-inner, .event-inner, .res-inner {
+  width: 100%; max-width: 620px; margin: 0 auto; padding: 6px 16px 20px;
+}
+.stat-strip {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px;
+  margin-bottom: 14px;
+}
+.stat-strip div {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  padding: 10px 4px; text-align: center;
+}
+.stat-strip b { display: block; font-size: 19px; color: var(--neon); }
+.stat-strip span { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: .06em; }
+.lobby-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.lobby-row .btn { margin: 7px 0; }
+
+/* ------------------------------------------------------------------ setup */
+.core-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+.core {
+  display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 12px; align-items: center;
+  background: var(--panel); border: 2px solid var(--line); border-radius: 14px;
+  padding: 12px; cursor: pointer; text-align: left; color: inherit; font: inherit;
+  width: 100%;
+}
+.core.on { border-color: var(--neon); box-shadow: 0 0 18px rgba(53, 224, 208, .22); }
+.core.locked { opacity: .5; cursor: not-allowed; }
+.core .ico { font-size: 34px; text-align: center; }
+.core h3 { margin: 0 0 2px; font-size: 17px; }
+.core p { margin: 0; font-size: 13px; color: var(--dim); }
+.core .kit { margin-top: 5px; font-size: 12px; color: var(--neon); }
+.ascent-pick { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.ascent-pick button {
+  flex: 1 1 60px; background: var(--panel-2); border: 1px solid var(--line);
+  color: var(--dim); border-radius: 10px; padding: 9px 6px; font: inherit;
+  font-size: 13px; cursor: pointer;
+}
+.ascent-pick button.on { background: var(--mag); color: var(--void); border-color: var(--mag); font-weight: 700; }
+
+/* -------------------------------------------------------------------- map */
+.act-line {
+  max-width: 620px; margin: 0 auto; padding: 2px 16px 8px; flex: none;
+  color: var(--dim); font-size: 13px; text-align: center; letter-spacing: .08em;
+  text-transform: uppercase;
+}
+/* No padding here: the edge SVG is inset:0 on this box and the nodes are
+   positioned in percentages of it, so any padding would slide the lines off
+   the dots. The nodes keep themselves off the edges by spanning 10%-90%. */
+.map-wrap { position: relative; width: 100%; max-width: 460px; margin: 0 auto; }
+.map-edges { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.map-nodes { position: relative; width: 100%; }
+.node {
+  position: absolute; width: 46px; height: 46px; margin: -23px 0 0 -23px;
+  border-radius: 50%; border: 2px solid var(--line); background: var(--panel);
+  color: var(--ink); font-size: 21px; cursor: default; font-family: inherit;
+  display: flex; align-items: center; justify-content: center;
+}
+.node.open {
+  cursor: pointer; border-color: var(--neon); color: var(--neon);
+  box-shadow: 0 0 16px rgba(53, 224, 208, .45);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+.node.done { border-color: var(--neon-dk); background: var(--panel-2); opacity: .55; }
+.node.here { border-color: var(--gold); box-shadow: 0 0 18px rgba(255, 210, 74, .5); }
+.node.boss { width: 58px; height: 58px; margin: -29px 0 0 -29px; font-size: 27px; border-color: var(--mag); }
+.node.boss.open { border-color: var(--mag); color: var(--mag); box-shadow: 0 0 22px rgba(255, 61, 146, .55); }
+@keyframes pulse { 50% { transform: scale(1.09); } }
+
+/* ------------------------------------------------------------------ arena */
+/* The stage must fill what is left and be allowed to shrink — min-height:0 is
+   what lets a flex child with an absolutely-positioned canvas size correctly. */
+.stage { position: relative; flex: 1 1 auto; width: 100%; min-height: 0; }
+/* The canvas takes its DISPLAY size from here and only its backing store from
+   JS. An inline pixel size set in resize() goes stale on the next reflow and
+   the canvas then hangs below the stage. */
+#cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+.hud-top {
+  position: absolute; left: 0; right: 0;
+  top: calc(6px + env(safe-area-inset-top, 0px));
+  display: flex; align-items: center; gap: 8px; padding: 0 10px;
+  pointer-events: none;
+}
+.hud-top .icon-btn { pointer-events: auto; }
+.hud-top .hud { padding: 4px 8px; font-size: 13px; }
+.hud-top .score { margin-left: auto; }
+.hud-fx {
+  position: absolute; left: 10px; right: 10px; top: calc(52px + env(safe-area-inset-top, 0px));
+  display: flex; flex-wrap: wrap; gap: 5px; pointer-events: none;
+}
+.pill {
+  font-size: 11px; font-weight: 700; padding: 3px 7px; border-radius: 7px;
+  background: rgba(23, 19, 52, .85); border: 1px solid var(--line); color: var(--neon);
+}
+.pill.bad { color: var(--danger); border-color: var(--danger); }
+.hud-hint {
+  position: absolute; left: 0; right: 0; bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  text-align: center; color: var(--dim); font-size: 13px; pointer-events: none;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, .9);
+}
+
+/* ------------------------------------------------------------------ cards */
+.card-row {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;
+  margin: 10px 0 14px;
+}
+.card-row.four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.gcard {
+  background: var(--panel); border: 2px solid var(--line); border-radius: 13px;
+  padding: 10px 8px; text-align: center; cursor: pointer; color: inherit;
+  font: inherit; display: flex; flex-direction: column; gap: 4px; min-height: 152px;
+}
+.gcard:active { transform: translateY(2px); }
+.gcard .ico { font-size: 26px; }
+.gcard .nm { font-weight: 700; font-size: 13px; line-height: 1.15; }
+.gcard .ds { font-size: 11px; color: var(--dim); line-height: 1.3; flex: 1; }
+.gcard .tag {
+  font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: var(--dim);
+}
+.gcard .cost { font-size: 13px; font-weight: 700; color: var(--gold); }
+.gcard.common { border-color: var(--r-common); }
+.gcard.uncommon { border-color: var(--r-uncommon); }
+.gcard.rare { border-color: var(--r-rare); box-shadow: 0 0 14px rgba(160, 107, 255, .25); }
+.gcard.legendary { border-color: var(--r-legendary); box-shadow: 0 0 18px rgba(255, 210, 74, .3); }
+.gcard.combo { background: linear-gradient(180deg, rgba(53, 224, 208, .16), var(--panel)); }
+.gcard.combo .tag { color: var(--neon); }
+.gcard.poor { opacity: .45; }
+.gcard.owned { opacity: .4; }
+
+.pick-title { text-align: center; margin: 14px 0 2px; font-size: 22px; }
+.pick-sub { text-align: center; color: var(--dim); margin: 0 0 6px; font-size: 14px; }
+
+.deck-grid {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px;
+  max-height: 52vh; overflow-y: auto; margin: 10px 0;
+}
+.deck-grid .gcard { min-height: 0; }
+.deck-grid .ds { display: none; }
+
+/* ------------------------------------------------------------------- shop */
+.service-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+.service {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  padding: 10px 6px; text-align: center; cursor: pointer; color: inherit; font: inherit;
+}
+.service .ico { font-size: 22px; }
+.service .nm { font-size: 12px; font-weight: 700; margin-top: 3px; }
+.service .ds { font-size: 10px; color: var(--dim); }
+.service .cost { font-size: 13px; font-weight: 700; color: var(--gold); margin-top: 4px; }
+.service.poor { opacity: .45; }
+.service.gone { opacity: .3; text-decoration: line-through; }
+
+/* ------------------------------------------------------------------ event */
+.event-inner { max-width: 520px; text-align: center; padding-top: calc(26px + env(safe-area-inset-top, 0px)); }
+.event-icon { font-size: 52px; }
+.event-name { margin: 8px 0 6px; font-size: 22px; color: var(--neon); }
+.event-text { color: var(--dim); font-size: 15px; line-height: 1.5; margin: 0 0 16px; }
+.choice-list { display: flex; flex-direction: column; gap: 9px; }
+.choice {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 13px;
+  padding: 13px 14px; text-align: left; cursor: pointer; color: inherit; font: inherit;
+}
+.choice:active { transform: translateY(2px); }
+.choice b { display: block; font-size: 16px; margin-bottom: 2px; }
+.choice span { font-size: 13px; color: var(--dim); }
+.choice.locked { opacity: .4; cursor: not-allowed; }
+
+/* ---------------------------------------------------------------- results */
+.res-inner { text-align: center; padding-top: calc(26px + env(safe-area-inset-top, 0px)); }
+.res-emoji { font-size: 60px; }
+.res-title { margin: 6px 0; font-size: 25px; }
+.res-score { font-size: 42px; font-weight: 700; color: var(--neon); line-height: 1.1; }
+.res-stats {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 16px 0;
+}
+.res-stats div { background: var(--panel); border: 1px solid var(--line); border-radius: 11px; padding: 9px 4px; }
+.res-stats b { display: block; font-size: 17px; }
+.res-stats span { font-size: 11px; color: var(--dim); }
+.res-deck { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-bottom: 16px; }
+.res-deck span {
+  font-size: 12px; background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 8px; padding: 4px 7px;
+}
+.res-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.res-actions .btn { margin: 0; }
+
+/* ------------------------------------------------------------ leaderboard */
+.lb-tabs { display: flex; gap: 8px; max-width: 620px; margin: 0 auto 8px; padding: 0 16px; width: 100%; }
+.tab {
+  flex: 1; background: var(--panel-2); border: 1px solid var(--line); color: var(--dim);
+  border-radius: 10px; padding: 9px; font: inherit; font-size: 14px; cursor: pointer;
+}
+.tab.active { background: var(--neon); color: var(--void); border-color: var(--neon); font-weight: 700; }
+.lb-rows { width: 100%; max-width: 620px; margin: 0 auto; padding: 0 16px; }
+.lb-row { background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); }
+.lb-row.me { outline: 2px solid var(--neon); }
+.lb-stat { color: var(--dim); }
+
+/* ---------------------------------------------------------------- archive */
+.archive-list { width: 100%; max-width: 620px; margin: 0 auto; padding: 0 16px; }
+.arch-group { margin-bottom: 6px; color: var(--dim); font-size: 12px; text-transform: uppercase; letter-spacing: .1em; }
+.arch {
+  display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 10px; align-items: center;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  padding: 10px 12px; margin-bottom: 8px; cursor: pointer; color: inherit;
+  font: inherit; text-align: left; width: 100%;
+}
+.arch .ico { font-size: 24px; text-align: center; }
+.arch b { display: block; font-size: 15px; }
+.arch small { color: var(--dim); font-size: 12px; }
+.arch .price { font-weight: 700; color: var(--gold); white-space: nowrap; }
+.arch.owned { opacity: .5; cursor: default; }
+.arch.owned .price { color: var(--neon); }
+.arch.cant .price { color: var(--dim); }
+
+/* ----------------------------------------------------------------- modals */
+.modal { background: rgba(7, 6, 15, .82); }
+.modal-box {
+  background: var(--panel); color: var(--ink); border: 1px solid var(--line);
+  border-radius: 18px; padding: 20px; width: 100%; max-width: 380px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .7); text-align: center;
+}
+.modal-box.wide-box { max-width: 560px; }
+.modal-box h3 { margin: 0 0 10px; font-size: 20px; }
+.modal-sub { color: var(--dim); font-size: 14px; margin: 0 0 12px; }
+.modal-actions { display: flex; gap: 10px; justify-content: center; margin: 10px 0; }
+.help-steps { text-align: left; color: var(--dim); font-size: 14px; line-height: 1.55; padding-left: 20px; }
+.help-steps b { color: var(--ink); }
+
+/* gk-profiles injects its own sheets; theme them to match. */
+.sheet {
+  background: var(--panel); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 18px;
+}
+.sheet input {
+  background: var(--panel-2); color: var(--ink); border-color: var(--line);
+  font-family: inherit;
+}
+.sheet input::placeholder { color: var(--dim); }
+.avatar-choice { background: var(--panel-2); color: var(--ink); }
+.avatar-choice.selected { border-color: var(--neon); background: rgba(53, 224, 208, .18); }
+.pin-key { color: var(--ink); }
+/* A 1fr track will not shrink below its content, so six emoji columns overflow
+   the sheet on a narrow phone. Always minmax(0, 1fr). */
+.avatar-grid { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; }
+.pin-pad { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+
+.profile-list { width: 100%; max-width: 620px; margin: 0 auto; padding: 0 16px; }
+.profile-card { background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); }
+.profile-card .pmeta { color: var(--dim); opacity: 1; }
+.profile-card .ppin, .profile-card .pdelete { color: var(--dim); }
+
+.toast { background: var(--panel); color: var(--ink); border: 1px solid var(--neon); }
+
+/* ------------------------------------------------------------- small phones */
+@media (max-width: 360px) {
+  .logo { font-size: 33px; }
+  .card-row { gap: 6px; }
+  .gcard { padding: 8px 5px; min-height: 140px; }
+  .gcard .nm { font-size: 12px; }
+  .gcard .ds { font-size: 10px; }
+  .stat-strip b { font-size: 16px; }
+}

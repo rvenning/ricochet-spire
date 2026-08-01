@@ -1,0 +1,11 @@
+{
+  "name": "ricochet-spire",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A roguelite deck-builder wearing Breakout's clothes — climb the spire, draft a deck, break everything.",
+  "scripts": {
+    "test": "node --test",
+    "report": "node tests/bot.test.js --report",
+    "icons": "node tools/make-icons.js"
+  }
+}

@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>Ricochet Spire 🔺 — Climb. Bounce. Break.</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0e0b1e">
+<meta name="description" content="A roguelite deck-builder wearing Breakout's clothes. Draft a deck of ball, paddle and rule cards, pick your route up a branching spire, and see what your build does to the last boss.">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ricochet Spire">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="lib/gk-base.css">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔺</text></svg>">
+</head>
+<body>
+
+<!-- ===================================================== Splash =========== -->
+<div class="screen active" id="screen-splash">
+  <div class="splash-inner">
+    <div class="spire-mark" aria-hidden="true">🔺</div>
+    <h1 class="logo">RICOCHET<span>SPIRE</span></h1>
+    <p class="tagline">Climb. Bounce. Break.</p>
+    <button class="btn big" id="btn-continue-as" style="display:none"></button>
+    <button class="btn big" id="btn-start" onclick="App.play()">▶ Enter the Spire</button>
+    <button class="btn ghost" id="btn-install" style="display:none">📲 Add to Home Screen</button>
+    <div class="splash-foot">
+      <span id="sync-badge">…</span>
+      <button class="btn-sound icon-btn">🔊</button>
+      <button class="btn-music icon-btn" onclick="App.toggleMusic()">🎵</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================================================== Profiles ========= -->
+<div class="screen" id="screen-profiles">
+  <header class="bar">
+    <button class="icon-btn" onclick="GK.UI.showScreen('splash')">←</button>
+    <h2>Who's climbing?</h2>
+    <button class="btn-sound icon-btn">🔊</button>
+  </header>
+  <div class="profile-list" id="profile-list"></div>
+</div>
+
+<!-- ===================================================== Lobby ============ -->
+<div class="screen" id="screen-lobby">
+  <header class="bar">
+    <button class="icon-btn" onclick="App.play()">👥</button>
+    <div class="who" id="lobby-who"></div>
+    <button class="icon-btn" onclick="App.showLeaderboard()">🏆</button>
+  </header>
+  <div class="lobby-inner">
+    <div class="stat-strip" id="lobby-stats"></div>
+    <button class="btn big wide" id="btn-resume" style="display:none" onclick="App.resumeClimb()"></button>
+    <button class="btn big wide" onclick="App.showSetup()">🔺 New Climb</button>
+    <button class="btn blue wide" id="btn-daily" onclick="App.startDaily()">🗓️ Daily Challenge</button>
+    <div class="lobby-row">
+      <button class="btn ghost" onclick="App.showArchive()">💠 Archive</button>
+      <button class="btn ghost" onclick="App.showHelp()">❓ How to Play</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================================================== Setup =========== -->
+<div class="screen" id="screen-setup">
+  <header class="bar">
+    <button class="icon-btn" onclick="App.showLobby()">←</button>
+    <h2>Choose your climber</h2>
+    <span class="hud shards">💠 <b id="setup-shards">0</b></span>
+  </header>
+  <div class="setup-inner">
+    <div class="core-list" id="core-list"></div>
+    <div class="ascent-pick" id="ascent-pick"></div>
+    <button class="btn big wide" onclick="App.beginClimb()">▶ Begin the Climb</button>
+  </div>
+</div>
+
+<!-- ===================================================== The map ========== -->
+<div class="screen" id="screen-map">
+  <header class="bar">
+    <button class="icon-btn" onclick="App.confirmAbandon()">☰</button>
+    <span class="hud hp" id="map-hp"></span>
+    <span class="hud gold" id="map-gold"></span>
+    <button class="icon-btn" onclick="App.showDeck()">🃏</button>
+  </header>
+  <p class="act-line" id="act-line"></p>
+  <div class="map-wrap" id="map-wrap">
+    <svg class="map-edges" id="map-edges" aria-hidden="true"></svg>
+    <div class="map-nodes" id="map-nodes"></div>
+  </div>
+</div>
+
+<!-- ===================================================== The arena ======== -->
+<div class="screen" id="screen-game">
+  <!-- The HUD floats INSIDE the stage. As a flex sibling it would reflow the
+       stage every time the score or a power-up pill changed, and the playfield
+       geometry would go stale mid-rally. -->
+  <div class="stage" id="stage">
+    <canvas id="cv"></canvas>
+    <div class="hud-top" id="hud-top">
+      <button class="icon-btn small" onclick="App.pause()">⏸</button>
+      <span class="hud hp" id="hud-hp"></span>
+      <span class="hud score" id="hud-score">0</span>
+      <span class="hud combo" id="hud-combo"></span>
+    </div>
+    <div class="hud-fx" id="hud-fx"></div>
+    <div class="hud-hint" id="hud-hint"></div>
+  </div>
+</div>
+
+<!-- ===================================================== Reward =========== -->
+<div class="screen" id="screen-reward">
+  <div class="pick-inner">
+    <h2 class="pick-title" id="reward-title">Choose a card</h2>
+    <p class="pick-sub" id="reward-sub"></p>
+    <div class="card-row" id="reward-cards"></div>
+    <button class="btn ghost wide" id="btn-skip" onclick="App.skipReward()">Skip — take 22 gold</button>
+  </div>
+</div>
+
+<!-- ===================================================== Shop ============= -->
+<div class="screen" id="screen-shop">
+  <header class="bar">
+    <span class="hud gold" id="shop-gold"></span>
+    <h2>🛒 The Landing Trader</h2>
+    <button class="icon-btn" onclick="App.showDeck()">🃏</button>
+  </header>
+  <div class="shop-inner">
+    <div class="card-row" id="shop-cards"></div>
+    <div class="service-row" id="shop-services"></div>
+    <button class="btn wide" onclick="App.leaveShop()">Leave the landing</button>
+  </div>
+</div>
+
+<!-- ===================================================== Event ============ -->
+<div class="screen" id="screen-event">
+  <div class="event-inner">
+    <div class="event-icon" id="event-icon"></div>
+    <h2 class="event-name" id="event-name"></h2>
+    <p class="event-text" id="event-text"></p>
+    <div class="choice-list" id="event-choices"></div>
+  </div>
+</div>
+
+<!-- ===================================================== Campfire ========= -->
+<div class="screen" id="screen-rest">
+  <div class="event-inner">
+    <div class="event-icon">🔥</div>
+    <h2 class="event-name">A quiet landing</h2>
+    <p class="event-text" id="rest-text">Nothing is trying to kill you here. Make it count.</p>
+    <div class="choice-list" id="rest-choices"></div>
+  </div>
+</div>
+
+<!-- ===================================================== Treasure ========= -->
+<div class="screen" id="screen-treasure">
+  <div class="event-inner">
+    <div class="event-icon" id="chest-icon">📦</div>
+    <h2 class="event-name" id="chest-name">A chest</h2>
+    <p class="event-text" id="chest-text"></p>
+    <button class="btn big wide" onclick="App.openChest()">Open it</button>
+  </div>
+</div>
+
+<!-- ===================================================== Results ========== -->
+<div class="screen" id="screen-results">
+  <div class="res-inner">
+    <div class="res-emoji" id="res-emoji">🔺</div>
+    <h2 class="res-title" id="res-title"></h2>
+    <div class="res-score" id="res-score">0</div>
+    <div class="res-stats" id="res-stats"></div>
+    <div class="res-deck" id="res-deck"></div>
+    <div class="res-actions">
+      <button class="btn ghost" onclick="App.showLobby()">🏠 Lobby</button>
+      <button class="btn" onclick="App.showSetup()">🔺 Climb again</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================================================== Leaderboard ====== -->
+<div class="screen" id="screen-leaderboard">
+  <header class="bar">
+    <button class="icon-btn" onclick="App.showLobby()">←</button>
+    <h2>🏆 Family Leaderboard</h2>
+    <button class="btn-sound icon-btn">🔊</button>
+  </header>
+  <div class="lb-tabs">
+    <button class="tab active" id="tab-best" onclick="App.showLeaderboard('best')">Best climb</button>
+    <button class="tab" id="tab-daily" onclick="App.showLeaderboard('daily')">Today's daily</button>
+  </div>
+  <div class="lb-rows" id="lb-rows"></div>
+</div>
+
+<!-- ===================================================== Archive ========== -->
+<div class="screen" id="screen-archive">
+  <header class="bar">
+    <button class="icon-btn" onclick="App.showLobby()">←</button>
+    <h2>💠 The Archive</h2>
+    <span class="hud shards">💠 <b id="archive-shards">0</b></span>
+  </header>
+  <p class="screen-hint" id="archive-hint"></p>
+  <div class="archive-list" id="archive-list"></div>
+</div>
+
+<!-- ===================================================== Modals =========== -->
+<div class="modal" id="modal-pause">
+  <div class="modal-box">
+    <h3>⏸ Paused</h3>
+    <button class="btn green wide" onclick="App.resume()">▶ Back to it</button>
+    <button class="btn blue wide" onclick="App.showHelp()">❓ How to Play</button>
+    <div class="modal-actions">
+      <button class="btn-sound icon-btn">🔊</button>
+      <button class="btn-music icon-btn" onclick="App.toggleMusic()">🎵</button>
+    </div>
+    <button class="btn grey wide" onclick="App.abandonArena()">🏳️ Give up the climb</button>
+  </div>
+</div>
+
+<div class="modal" id="modal-deck">
+  <div class="modal-box wide-box">
+    <h3 id="deck-title">🃏 Your deck</h3>
+    <div class="deck-grid" id="deck-grid"></div>
+    <button class="btn green wide" onclick="GK.UI.closeModal('modal-deck')">Close</button>
+  </div>
+</div>
+
+<div class="modal" id="modal-replace">
+  <div class="modal-box wide-box">
+    <h3>Your deck is full</h3>
+    <p class="modal-sub" id="replace-sub"></p>
+    <div class="deck-grid" id="replace-grid"></div>
+    <button class="btn grey wide" onclick="GK.UI.closeModal('modal-replace')">Keep what I have</button>
+  </div>
+</div>
+
+<div class="modal" id="modal-help">
+  <div class="modal-box wide-box">
+    <h3>❓ How to Play</h3>
+    <ol class="help-steps">
+      <li>Slide your finger (or the mouse, or ← →) to move the <b>paddle</b>. Tap to launch a held ball.</li>
+      <li>Clear every breakable brick to finish a room. <b>Steel never breaks</b> — it is there to get in your way.</li>
+      <li>A dropped ball costs <b>health</b>, and health carries across the whole climb. Run out and the run is over.</li>
+      <li>Every room you clear offers a <b>card</b>. Cards last the whole run and stack into builds — Fireball plus Explosive plus Chain Lightning is a different game.</li>
+      <li>Your deck holds <b>12 cards</b>. After that, taking one means giving one up.</li>
+      <li>Pick your <b>route</b> up the map. Elites hit harder and pay better; campfires heal; the boss is at the top of every act.</li>
+      <li><b>Armour</b> blunts raw damage. Piercing and Heavy are the answer to it.</li>
+      <li>Death ends the run — but you keep the <b>shards</b>, and the Archive remembers.</li>
+    </ol>
+    <button class="btn green wide" onclick="GK.UI.closeModal('modal-help')">Got it</button>
+  </div>
+</div>
+
+<div class="modal" id="modal-abandon">
+  <div class="modal-box">
+    <h3>Leave the spire?</h3>
+    <p class="modal-sub">Your climb is saved — you can pick it up where you left off.</p>
+    <button class="btn green wide" onclick="GK.UI.closeModal('modal-abandon')">Keep climbing</button>
+    <button class="btn grey wide" onclick="App.parkClimb()">💾 Save and step out</button>
+    <button class="btn danger wide" onclick="App.abandonRun()">🏳️ Abandon this climb</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- gamekit (vendored from rvenning/gamekit into lib/) -->
+<script src="lib/gk-util.js"></script>
+<script src="lib/gk-audio.js"></script>
+<script src="lib/gk-ui.js"></script>
+<script src="lib/gk-storage.js"></script>
+<script src="lib/gk-profiles.js"></script>
+<script src="lib/gk-pwa.js"></script>
+<script src="lib/gk-fx.js"></script>
+<script src="lib/gk-debug.js"></script>
+<script>
+  // Neon: fine sparks that fly fast and die quickly, and a hard short shake.
+  const Fx = GK.Fx.configure({
+    grav: 300, poolCap: 800, shakeMax: 13, shakeDecay: 32, shape: "circle",
+    burstSpeed: 210, burstSize: 2.2, textSize: 15, textDy: -38, textCap: 30,
+    font: "'Chakra Petch',sans-serif",
+  });
+  const Tween = GK.Tween;
+</script>
+<script src="js/firebase-config.js"></script>
+<!-- data registries -->
+<script src="js/rng.js"></script>
+<script src="js/physics.js"></script>
+<script src="js/cards.js"></script>
+<script src="js/bricks.js"></script>
+<script src="js/powerups.js"></script>
+<script src="js/arenas.js"></script>
+<!-- systems -->
+<script src="js/game.js"></script>
+<script src="js/bosses.js"></script>
+<script src="js/events.js"></script>
+<script src="js/unlocks.js"></script>
+<script src="js/run.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/render.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
