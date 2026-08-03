@@ -166,6 +166,48 @@ test("a shield eats the first drop and then stops", () => {
   assert.ok(g.hp < hp, "the second drop has to hurt");
 });
 
+// Robert reported "the paddle is sometimes moving on its own" and he was right:
+// Chill Pit's ice used to be a bang-bang accelerator — full thrust toward the
+// target from whichever side — with friction of about 1% of velocity per frame.
+// It sailed past, pushed back just as hard, and swung to and fro forever.
+// "Sometimes" was one arena in act 1.
+test("the paddle comes to rest after a swipe, in every arena", () => {
+  const fails = [];
+  for (const a of S.ARENAS) {
+    const g = start(a.id, []);
+    g.paddle.x = 80; g.paddle.vx = 0;
+    g.aimAt(300);                       // the swipe ends here; no input after it
+    let settled = -1, overshoot = 0;
+    for (let f = 0; f < 60 * 5; f++) {
+      g.stepPaddle(1 / 60);
+      overshoot = Math.max(overshoot, g.paddle.x - 300);
+      if (settled < 0 && Math.abs(g.paddle.x - 300) < 1 && Math.abs(g.paddle.vx) < 20) settled = f;
+    }
+    if (settled < 0) fails.push(`${a.id}: never settles (${g.paddle.x.toFixed(0)}px, v=${g.paddle.vx.toFixed(0)})`);
+    else if (settled > 60 * 2) fails.push(`${a.id}: takes ${(settled / 60).toFixed(1)}s to settle`);
+    if (overshoot > 60) fails.push(`${a.id}: overshoots by ${overshoot.toFixed(0)}px`);
+  }
+  assert.deepEqual(fails, []);
+});
+
+test("but ice still slides — it is not just a slow paddle", () => {
+  const g = start("chillpit", []);
+  g.paddle.x = 80; g.paddle.vx = 0;
+  g.aimAt(300);
+  let overshoot = 0;
+  for (let f = 0; f < 60 * 3; f++) { g.stepPaddle(1 / 60); overshoot = Math.max(overshoot, g.paddle.x - 300); }
+  assert.ok(overshoot > 6, `ice overshot by only ${overshoot.toFixed(1)}px — that is not ice`);
+});
+
+test("a plain paddle does not overshoot at all", () => {
+  const g = start("foyer", []);
+  g.paddle.x = 80; g.paddle.vx = 0;
+  g.aimAt(300);
+  let overshoot = 0;
+  for (let f = 0; f < 60 * 3; f++) { g.stepPaddle(1 / 60); overshoot = Math.max(overshoot, g.paddle.x - 300); }
+  assert.ok(overshoot < 0.5, `a normal paddle overshot by ${overshoot.toFixed(1)}px`);
+});
+
 test("Time Warp slows the ball near the paddle and nowhere else", () => {
   const g = start("foyer", ["timewarp"]);
   const b = g.balls[0];

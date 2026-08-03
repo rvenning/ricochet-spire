@@ -412,12 +412,19 @@ const Game = {
     const maxV = this.paddleSpeed();
 
     if (this.ice) {
-      // Ice: the paddle accelerates toward the target and coasts. Overshooting
-      // is the point.
-      const dir = Math.sign(target - p.x);
-      p.vx += dir * 2600 * dt;
+      // Ice: a damped spring, so it overshoots once and then settles.
+      //
+      // It used to be a bang-bang accelerator — full thrust toward the target
+      // whichever side it was on — with friction of 0.55^dt, which is about
+      // 1% of the velocity per frame. So it sailed past the target and pushed
+      // back just as hard, forever: the paddle swung to and fro on its own and
+      // never came to rest. Raising the acceleration and the speed cap for feel
+      // turned that wobble into a pendulum. Overshooting is the point of ice;
+      // never stopping is not.
+      const dx = target - p.x;
+      p.vx += dx * 34 * dt;
+      p.vx *= Math.exp(-7 * dt);
       p.vx = Math.max(-maxV, Math.min(maxV, p.vx));
-      p.vx *= Math.pow(0.55, dt);
       p.x += p.vx * dt;
     } else {
       // Ease toward the target, then clamp to the speed limit. The ease gives

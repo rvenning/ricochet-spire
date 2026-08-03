@@ -22,6 +22,7 @@ const Render = {
   t: 0,
   keys: { left: false, right: false },
   pointerX: null,
+  touchId: null,          // the one finger we are following
 
   boot() {
     this.cv = document.getElementById("cv");
@@ -80,15 +81,32 @@ const Render = {
     // Belt and braces for touch: some iOS builds are stingy with pointermove
     // during a fast flick, and touchmove always arrives. Both paths end in the
     // same call, so a duplicate is harmless.
-    this.cv.addEventListener("touchmove", (e) => {
-      e.preventDefault();
-      if (e.touches.length) aimAtClientX(e.touches[0].clientX);
-    }, { passive: false });
-
+    //
+    // Follow ONE finger, by identifier. `touches[0]` is not a stable reference
+    // to the finger you started with — a resting palm or a second finger can
+    // take that slot, and then the paddle jumps somewhere nobody asked for.
+    const touchOf = (e) => {
+      for (const t of e.changedTouches) if (t.identifier === this.touchId) return t;
+      for (const t of e.touches) if (t.identifier === this.touchId) return t;
+      return null;
+    };
     this.cv.addEventListener("touchstart", (e) => {
       e.preventDefault();
-      if (e.touches.length) aimAtClientX(e.touches[0].clientX);
+      if (this.touchId === null && e.changedTouches.length) {
+        this.touchId = e.changedTouches[0].identifier;
+        aimAtClientX(e.changedTouches[0].clientX);
+      }
     }, { passive: false });
+
+    this.cv.addEventListener("touchmove", (e) => {
+      e.preventDefault();
+      const t = touchOf(e);
+      if (t) aimAtClientX(t.clientX);
+    }, { passive: false });
+
+    const endTouch = (e) => { if (touchOf(e)) this.touchId = null; };
+    this.cv.addEventListener("touchend", endTouch, { passive: false });
+    this.cv.addEventListener("touchcancel", endTouch, { passive: false });
 
     window.addEventListener("keydown", (e) => {
       if (e.key === "ArrowLeft") this.keys.left = true;
