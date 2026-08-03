@@ -182,11 +182,17 @@ const BRAINS = {
       if (g.time > mem.lapseUntil) {
         const b = threat(g);
         mem.target = paddleFor(g, landing(g, b));
-        // 3. Aim error, scaled by how fast the ball is reading and how many
-        //    there are to watch. A 550px/s ball is genuinely harder to place
-        //    than a 440px/s one, and a constant slop misses that entirely.
+        // 3. Aim error. Three terms, because a flat slop turned out to be
+        //    SMALLER than the paddle's own half-width — which made the bot
+        //    literally incapable of missing a straight return, and no amount of
+        //    narrowing the paddle or raising the damage fixed that.
         const sp = b ? g.ballSpeed(b) : 420;
-        const slop = 10 + sp / 24 + (g.balls.length - 1) * 16;
+        //    The big one: a person does not compute a multi-bounce path. The
+        //    more walls the ball has to find before it arrives, the worse the
+        //    guess — while `landing()` folds every reflection perfectly.
+        const bounces = (b && b.vy > 0 && !b.stuck)
+          ? Math.floor(Math.abs(b.vx * ((PADDLE_Y - b.y) / b.vy)) / LW) : 0;
+        const slop = 12 + sp / 20 + bounces * 26 + (g.balls.length - 1) * 16;
         mem.target += (rand() - 0.5) * slop;
       }
       // 4. Mirror World: a second of steering the wrong way after every flip.

@@ -51,17 +51,22 @@ const BASE_PADDLE_W = 80;
 //   correction at the same speed as a 300px one, which reads as sluggish up
 //   close and laggy far away.
 //
-//   BASE_PADDLE_SPEED is a SANITY LIMIT, and nothing more. It was originally
-//   set at 2000 to keep the balance bots fallible — and that was the wrong job
-//   to give it. A finger crossing the field on an iPad moves far quicker than
-//   2000px/s, so the paddle visibly trailed the swipe and the whole control
-//   felt heavy next to Brick Breaker DX, which caps nothing at all.
+//   BASE_PADDLE_SPEED is the ceiling on how fast it can travel. 2000px/s
+//   crosses the 420px field in about 0.2s, roughly a real thumb flick.
 //
-//   Difficulty comes from the paddle's WIDTH (see below) and from the fact that
-//   a player aims imperfectly — both of which are honest. It must not come from
-//   the paddle refusing to go where it was sent.
+//   This was briefly raised to 4200 on the theory that the cap was what made
+//   the paddle feel heavy on an iPad. It wasn't: the actual cause was an input
+//   bug that threw away every touch move event (see render.js), and the two
+//   were changed in the same commit so the theory was never tested on its own.
+//   With the input fixed, the cap is back where it was — and it takes the
+//   difficulty back with it, because a paddle that can reach anything means a
+//   player who can never be caught out of position.
 const PADDLE_EASE = 16;
-const BASE_PADDLE_SPEED = 4200;
+const BASE_PADDLE_SPEED = 2000;
+
+// What a dropped ball costs when it was NOT your last one, as a fraction of the
+// full price. Multiball should be a reward you can still be punished for.
+const SPARE_BALL_COST = 0.5;
 const KEY_PADDLE_SPEED = 760;   // keys are coarse; matching the pointer is unplayable
 const STEP = 1 / 60;
 const MAX_STEPS = 8;            // a backgrounded tab must not simulate a minute
@@ -746,23 +751,39 @@ const Game = {
     this.emit("paddle", { x: b.x, y: py, charged: b.charged });
   },
 
+  // A spare ball costs HALF; your last ball costs full.
+  //
+  // Charging full price for every ball turned multiball into a liability: the
+  // reward handed you three balls and then billed you for all three, and nobody
+  // can be in three places at once. Making spares completely free went too far
+  // the other way — with two balls in play the bots stopped spending health
+  // altogether. Half keeps multiball clearly worth having while leaving it a
+  // cost rather than immunity.
   loseBall(b) {
     b.dead = true;
     const i = this.balls.indexOf(b);
     if (i >= 0) this.balls.splice(i, 1);
 
+    const last = this.balls.length === 0;
+    const cost = last ? this.hpPerBall : Math.max(1, Math.round(this.hpPerBall * SPARE_BALL_COST));
+
+    // A shield covers whichever drop comes first, exactly as the card says.
     if (this.shields > 0) {
       this.shields--;
       this.emit("shieldUsed", { left: this.shields });
-      if (!this.balls.length) this.serve(false);
+      if (last) this.serve(false);
       return;
     }
 
-    this.hp -= this.hpPerBall;
+    this.hp -= cost;
+    if (!last) {
+      this.emit("ballGone", { x: b.x, left: this.balls.length, cost });
+      return;                                      // step() ends it if hp <= 0
+    }
     this.runHooks("ballLost", { ball: b });
-    this.emit("ballLost", { hp: this.hp, x: b.x });
+    this.emit("ballLost", { hp: this.hp, x: b.x, cost });
     if (this.hp <= 0) return;                      // step() ends the arena
-    if (!this.balls.length) this.serve(false);
+    this.serve(false);
   },
 
   splitBalls(n) {

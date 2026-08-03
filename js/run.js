@@ -297,11 +297,10 @@ const Run = {
       hpMul,
       speedMul: 1 + (s.act - 1) * 0.06 + (isElite ? 0.04 : 0),
       scoreMul: 1 + (s.act - 1) * 0.55 + (isElite ? 0.4 : 0) + (isBoss ? 0.8 : 0),
-      // What a dropped ball costs. It rises through the climb rather than
-      // being flat: a bot dying on the very first room of a run turned out to
-      // be a flat 8 against a starting 62, which is eight mistakes for the
-      // whole of act 1. This is the main dial for overall difficulty — it is
-      // the only one that makes a mistake matter without making a room longer.
+      // What losing your last ball costs; a spare ball costs half of it (see
+      // SPARE_BALL_COST in game.js). Rising through the climb rather than flat,
+      // because a mistake on floor 30 should not cost what one on floor 2 did —
+      // a flat 8 against a starting 62 had the bot dying on the first room.
       hpPerBall: Math.round(((isBoss ? 6 : isElite ? 4 : 0) + 6 + s.act * 2.5) * (mods.hurtMul || 1)),
       timeLimit: isBoss ? 240 : isElite ? 190 : 155,
       goldBase: Math.round((26 + node.floor * 2.4 + s.act * 9) * (isElite ? 2 : 1) * (isBoss ? 3 : 1)),

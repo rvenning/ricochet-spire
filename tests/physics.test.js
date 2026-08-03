@@ -154,6 +154,59 @@ test("losing is decided before winning in the same step", () => {
   assert.equal(result.win, false, "a run that ended in death was scored as a clear");
 });
 
+test("a spare ball costs half; the last one costs full", () => {
+  const g = start("foyer", ["splitter", "splitter"]);   // serves three
+  assert.equal(g.balls.length, 3);
+  const full = g.hpPerBall;
+  const half = Math.round(full / 2);
+  let hp = g.hp;
+
+  g.loseBall(g.balls[0]);
+  assert.equal(g.hp, hp - half, "one of three should cost half");
+  assert.equal(g.balls.length, 2, "and no replacement while others are in play");
+  hp = g.hp;
+
+  g.loseBall(g.balls[0]);
+  assert.equal(g.hp, hp - half, "two of three should cost half");
+  assert.equal(g.balls.length, 1);
+  hp = g.hp;
+
+  g.loseBall(g.balls[0]);
+  assert.equal(g.hp, hp - full, "the last ball costs full price");
+  assert.equal(g.balls.length, 1, "and a fresh ball is served");
+});
+
+test("with one ball, every drop is a last-ball drop", () => {
+  const g = start("foyer", []);
+  assert.equal(g.balls.length, 1);
+  const hp = g.hp;
+  g.loseBall(g.balls[0]);
+  assert.equal(g.hp, hp - g.hpPerBall, "no multiball means no discount");
+});
+
+test("multiball is cheaper than losing the same balls one at a time", () => {
+  // The whole point: three balls dropping must cost less than three separate
+  // last-ball drops would have.
+  const multi = start("foyer", ["splitter", "splitter"]);
+  const before = multi.hp;
+  for (let i = 0; i < 3; i++) multi.loseBall(multi.balls[0]);
+  const withMulti = before - multi.hp;
+  assert.ok(withMulti < multi.hpPerBall * 3,
+    `three balls cost ${withMulti}, the same as ${multi.hpPerBall * 3} one at a time`);
+  assert.ok(withMulti > multi.hpPerBall,
+    "but it must still cost more than a single drop, or multiball is immunity");
+});
+
+test("a shield covers whichever ball drops first, as the card says", () => {
+  const g = start("foyer", ["splitter", "bulwark"]);    // two balls, one shield
+  assert.equal(g.balls.length, 2);
+  assert.equal(g.shields, 1);
+  const hp = g.hp;
+  g.loseBall(g.balls[0]);
+  assert.equal(g.shields, 0, "the shield should have fired");
+  assert.equal(g.hp, hp, "and covered the cost");
+});
+
 test("a shield eats the first drop and then stops", () => {
   const g = start("foyer", ["bulwark"]);
   assert.equal(g.shields, 1);

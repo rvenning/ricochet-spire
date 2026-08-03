@@ -138,6 +138,15 @@ const App = {
 
       shieldUsed: () => { Sfx.save(); Fx.addFlash(0.2, "#35e0d0"); GK.UI.toast("🧱 Bulwark held"); },
       save: (d) => { Sfx.save(); Fx.burst(d.x, LH - 8, "#35e0d0", 8, 150, 0.3, 2); },
+      // Losing a spare ball costs half, so it gets half the drama: a small
+      // knock rather than the full red flash, and the price shown so the
+      // difference between this and losing your last ball is legible.
+      ballGone: (d) => {
+        Sfx.badPickup();
+        Fx.addShake(4);
+        Fx.burst(d.x, LH - 10, "#ff9a3d", 10, 130, 0.32, 2);
+        Fx.text(d.x, LH - 60, `-${d.cost}  ·  ${d.left} left`, { color: "#ff9a3d", size: 14 });
+      },
       ballLost: (d) => {
         Sfx.hurt();
         Fx.addShake(9);
