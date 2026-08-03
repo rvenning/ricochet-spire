@@ -51,18 +51,18 @@ const BASE_PADDLE_W = 80;
 //   correction at the same speed as a 300px one, which reads as sluggish up
 //   close and laggy far away.
 //
-//   BASE_PADDLE_SPEED is the ceiling on how fast it can travel. 2000px/s
-//   crosses the 420px field in about 0.2s, roughly a real thumb flick.
+//   BASE_PADDLE_SPEED is the ceiling on how fast it can travel, and it is
+//   SETTLED BY FEEL, not by balance. Tested on the actual iPad both ways:
+//   2000px/s feels terrible, 4200 feels right. It does not get lowered again
+//   to make a bot miss.
 //
-//   This was briefly raised to 4200 on the theory that the cap was what made
-//   the paddle feel heavy on an iPad. It wasn't: the actual cause was an input
-//   bug that threw away every touch move event (see render.js), and the two
-//   were changed in the same commit so the theory was never tested on its own.
-//   With the input fixed, the cap is back where it was — and it takes the
-//   difficulty back with it, because a paddle that can reach anything means a
-//   player who can never be caught out of position.
+//   For reference, Brick Breaker DX — the paddle this one is chasing — has no
+//   cap whatsoever, and a slightly narrower paddle (76px to this game's 80, on
+//   the same 420px field). So if a long flick still drags, the next step is to
+//   remove the ceiling entirely rather than to shave it: at 4200 it only binds
+//   once a swipe covers more than ~260px in one frame.
 const PADDLE_EASE = 16;
-const BASE_PADDLE_SPEED = 2000;
+const BASE_PADDLE_SPEED = 4200;
 
 // What a dropped ball costs when it was NOT your last one, as a fraction of the
 // full price. Multiball should be a reward you can still be punished for.

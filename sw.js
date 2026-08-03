@@ -6,7 +6,7 @@
 // BUMP THE CACHE NAME whenever any shell file below changes, or devices keep
 // serving the copy they already have and the fix never lands.
 
-const CACHE = "ricochet-spire-v5";
+const CACHE = "ricochet-spire-v6";
 
 const SHELL = [
   "./",
