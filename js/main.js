@@ -46,12 +46,17 @@ const App = {
     });
 
     GK.initPWA({ appName: "Ricochet Spire" });
-    GK.UI.bindSoundToggle(Storage);
 
+    // Restore both mutes BEFORE the speaker button paints itself from them,
+    // otherwise a muted game comes back showing a hopeful loudspeaker.
     const settings = Storage.getSettings();
     Sfx.enabled = settings.sound !== false;
     Music.enabled = settings.music !== false;
     this.paintMusicButtons();
+
+    GK.UI.bindSoundToggle(Storage);
+    // Every menu button clicks; buttons that make their own sound keep it.
+    GK.UI.bindMenuClicks();
 
     this.refreshSplash();
 
